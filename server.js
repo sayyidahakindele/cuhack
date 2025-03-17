@@ -20,7 +20,11 @@ function getRandomColor() {
 app.get('/color_sequence', (req, res) => {
     colorSequence.push(getRandomColor());
     res.json({ status: pi_status, sequence: colorSequence });
-    console.log(pi_status)
+    console.log(colorSequence)
+});
+
+app.get('/score', (req, res) => {
+    res.json({ score: colorSequence.length});
 });
 
 // Receive user input and validate
