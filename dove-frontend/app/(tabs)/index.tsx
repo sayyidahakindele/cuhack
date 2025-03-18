@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 
-const COLORS = ['red', 'green', 'yellow'];
+const COLORS = ['red', 'green', 'yellow', 'blue'];
 const SERVER_URL = 'http://10.7.0.142:3000';
 
 const App = () => {
@@ -12,20 +12,34 @@ const App = () => {
   const [score, setScore] = useState<number>(0);
   const [hscore, setHScore] = useState<number>(0);
   const [status, setStatus] = useState('');
+  const [activeButton, setActiveButton] = useState<number | null>(null);
 
   // Fetch new sequence from server
   const fetchSequence = async () => {
     try {
       const response = await axios.get(`${SERVER_URL}/color_sequence`);
+      console.log(response.data.sequence)
       setSequence(response.data.sequence);
-      console.log(sequence)
       setUserInput([]);
       setStatus('Watch the sequence');
+      playSequence(response.data.sequence)
     } catch (error) {
       console.error('Error:', error);
       setStatus('Error fetching sequence');
     }
   };
+
+  const playSequence = (seq: number[]) => {
+    seq.forEach((colorIndex, i) => {
+      setTimeout(() => {
+        setActiveButton(colorIndex); // Highlight button
+        setTimeout(() => setActiveButton(null), 500); // Remove highlight after 500ms
+      }, i * 1000);
+    });
+
+    setTimeout(() => setStatus('Your turn!'), seq.length * 1000);
+  };
+
 
   // Fetch current score from server
   const fetchScore = async () => {
@@ -37,7 +51,7 @@ const App = () => {
     }
   };
 
-    // Fetch current score from server
+  // Fetch high score from server
   const fetchHScore = async () => {
     try {
       const response = await axios.get(`${SERVER_URL}/highscore`);
@@ -49,6 +63,8 @@ const App = () => {
 
   // Handle user input
   const handleUserInput = async (colorIndex: number) => {
+    setActiveButton(colorIndex);
+    setTimeout(() => setActiveButton(null), 300);
     setUserInput([...userInput, colorIndex]);
 
     try {
@@ -60,7 +76,7 @@ const App = () => {
         Alert.alert('Game Over', `Wrong sequence! Your score: ${score}`);
         setScore(0);
       } else if (response.data.status === 'correct') {
-        fetchScore(); // Update score
+        fetchScore(); 
         fetchHScore();
         setTimeout(fetchSequence, 1000);
       }
@@ -88,38 +104,99 @@ const App = () => {
       <SafeAreaView style={styles.centeredContainer}>
         <Text style={styles.buttonText}>High score: {hscore}</Text>
         <Text style={styles.buttonText}>Score: {score}</Text>
-        <Text style={styles.sequence}>{sequence.map(i => COLORS[i]).join(', ')}</Text>
-
-        {/* Color Buttons */}
-        <View style={styles.buttonContainer}>
-          {COLORS.map((color, index) => (
-            <TouchableOpacity key={index} style={[styles.button, { backgroundColor: color.toLowerCase() }]} onPress={() => handleUserInput(index)}>
-              <Text style={styles.buttonText}>{color}</Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.container}>
+          <View style={styles.circle}>
+            {COLORS.map((color, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.quarter,
+                  { backgroundColor: color },
+                  index === 0 && styles.topLeft,
+                  index === 1 && styles.topRight,
+                  index === 2 && styles.bottomLeft,
+                  index === 3 && styles.bottomRight,
+                  activeButton === index && { opacity: 0.5 },
+                ]}
+                onPress={() => handleUserInput(index)}
+              />
+            ))}
+            <View style={styles.startButton}>
+              <TouchableOpacity onPress={fetchSequence}>
+                <Text style={styles.buttonText}>Start Game</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-
-        {/* Controls */}
-        <TouchableOpacity style={styles.controlButton} onPress={fetchSequence}>
-          <Text style={styles.buttonText}>Start Game</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.controlButton} onPress={resetGame}>
-          <Text style={styles.buttonText}>Reset Game</Text>
-        </TouchableOpacity>
       </SafeAreaView>
     </SafeAreaProvider>
   );
 };
 
+const SIZE = 300;
+const INNER_SIZE = SIZE / 2.5
+const QUARTER_SIZE = SIZE / 2;
+
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  centeredContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  sequence: { fontSize: 16, fontWeight: 'bold', marginBottom: 20 },
-  buttonContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
-  button: { width: 80, height: 80, margin: 10, justifyContent: 'center', alignItems: 'center', borderRadius: 10 },
-  buttonText: { color: 'white', fontWeight: 'bold' },
-  controlButton: { backgroundColor: 'black', padding: 10, borderRadius: 5, margin: 10 },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#282828',
+  },
+  centeredContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  button: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50, 
+    justifyContent: 'center',
+    alignItems: 'center',
+    opacity: 0.8,
+  },
+  startButton: {
+      position: 'absolute',
+      width: INNER_SIZE,
+      height: INNER_SIZE,
+      backgroundColor: 'black',
+      borderRadius: INNER_SIZE / 2,
+      justifyContent: 'center',
+      alignItems: 'center',
+      top: (SIZE - INNER_SIZE) / 2,
+      left: (SIZE - INNER_SIZE) / 2,
+  },
+  circle: {
+    width: SIZE,
+    height: SIZE,
+    borderRadius: SIZE / 2,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  quarter: {
+    width: QUARTER_SIZE,
+    height: QUARTER_SIZE,
+  },
+  topLeft: {
+    borderTopLeftRadius: SIZE / 2,
+  },
+  topRight: {
+    borderTopRightRadius: SIZE / 2,
+  },
+  bottomLeft: {
+    borderBottomLeftRadius: SIZE / 2,
+  },
+  bottomRight: {
+    borderBottomRightRadius: SIZE / 2,
+  },
 });
 
 export default App;
