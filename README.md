@@ -7,3 +7,5 @@ Start server
 Start client
   1. cd dove-frontend
   2. npx expo start
+
+server live at - https://dove-juk2.onrender.com
