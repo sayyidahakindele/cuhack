@@ -1,6 +1,18 @@
 import rpi_gpio as GPIO  # Import the QNX Raspberry Pi GPIO module for controlling GPIO pins
 import time  # Import the time module for adding delays
 from getSequenceCode import get_sequence
+import socketio
+import signal
+import sys
+
+sio = socketio.Client()
+
+def signal_handler(sig, frame):
+    print('You pressed Ctrl+C!')
+    sio.disconnect()
+    sys.exit(0)  # Exit gracefully
+
+signal.signal(signal.SIGINT, signal_handler) #sets the signal handler
 
 # Define GPIO pins for RGB LED
 RED_PIN = 17   # GPIO pin for Red LED (pin 11)
@@ -66,42 +78,49 @@ def getSequence():
   except Exception as e:
     print(f"Error in get_sequence: {e}")
 
+def displaySequence(serverSequence):
+  for i in serverSequence:
+    if i == 0:
+      red()
+      time.sleep(1)
+      black()
+      time.sleep(0.05)
+    elif i == 1:
+      green()
+      time.sleep(1)
+      black()
+      time.sleep(0.05)
+    elif i == 2:
+      yellow()
+      time.sleep(1)
+      black()
+      time.sleep(0.05)
+  black()
+  time.sleep(2)
 
-##0 = 
-def main():
-    while(True):
-        seq = get_sequence()
-        print(seq)  # Print the response content
-        status = seq.get('status')
-        listx = seq.get('sequence')
-        print(status)
-        print(listx)
-        
-        if(status == 'false'):
-            sleep(3)
-            continue
-        else:
-            for x in listx:
-                if x == 0:
-                    red()
-                    time.sleep(1)
-                    black()
-                    time.sleep(0.05)
-                elif x == 1:
-                    green()
-                    time.sleep(1)
-                    black()
-                    time.sleep(0.05)
-                elif x == 2:
-                    yellow()
-                    time.sleep(1)
-                    black()
-                    time.sleep(0.05)
-            black()
-            time.sleep(2)
+@sio.event
+def connect():
+    print('connection established')
+    print('0 = red, 1 = green, 2 = yellow')
+
+@sio.event
+def pi_sequence(sequence):
+    print('current sequence ', sequence)
+    # Your LED control logic here
+    displaySequence(sequence)
+    #sio.emit('pi_sequence', 'sequence received')
+
+@sio.event
+def disconnect():
+    print('disconnected from server')
+
+sio.connect('http://172.20.10.6:3000') #replace with your server IP
+sio.wait()
+
+
     				
     	
 
 
-if __name__ == "__main__":
-  main()
+# if __name__ == "__main__":
+#   main()

@@ -4,7 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 
 const COLORS = ["red", "green", "yellow", "blue"];
-const SERVER_URL = "http://10.0.0.163:3000/";
+const SERVER_URL = "http://172.20.10.6:3000/";
 
 const App = () => {
   const [sequence, setSequence] = useState<number[]>([]);

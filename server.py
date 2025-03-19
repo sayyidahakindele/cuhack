@@ -77,4 +77,4 @@ def handle_connect():
 # if __name__ == '__main__':
 #     app.run(port=3000, debug=True)
 if __name__ == '__main__':
-    socketio.run(app, port=3000, debug=True, host='0.0.0.0') #must use socketio.run() instead of app.run() to use socketio
+    socketio.run(app) #must use socketio.run() instead of app.run() to use socketio
