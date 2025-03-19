@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 import random
 
 app = Flask(__name__)
 CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 color_sequence = []
 user_sequence = []
@@ -13,11 +15,15 @@ hscore = 0
 def get_random_color():
     return random.randint(0, 2)
 
+def send_sequence_to_pi(sequence):
+    socketio.emit('pi_sequence', sequence)
+
 @app.route('/color_sequence', methods=['GET'])
 def color_sequence_route():
     global color_sequence
     color_sequence.append(get_random_color())
     print(color_sequence)
+    send_sequence_to_pi(color_sequence) #send the sequence to the pi
     return jsonify({"status": pi_status, "sequence": color_sequence})
 
 @app.route('/score', methods=['GET'])
@@ -64,5 +70,11 @@ def reset():
     user_sequence = []
     return jsonify({"message": "Game reset!"})
 
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+
+# if __name__ == '__main__':
+#     app.run(port=3000, debug=True)
 if __name__ == '__main__':
-    app.run(port=3000, debug=True)
+    socketio.run(app, port=3000, debug=True, host='0.0.0.0') #must use socketio.run() instead of app.run() to use socketio
